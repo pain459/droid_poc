@@ -15,6 +15,11 @@ import redis
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+# OpenAI and MCP Client imports
+from openai import AsyncOpenAI
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
 # Ensure log directory exists
 os.makedirs("/var/log/app", exist_ok=True)
 
@@ -58,6 +63,9 @@ ws_handler = WebSocketLogHandler()
 ws_handler.setLevel(logging.INFO)
 ws_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
 logging.getLogger().addHandler(ws_handler)
+
+# Initialize OpenAI client
+openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY") or "dummy-key-missing")
 
 # Global metrics state
 METRICS_STATE = {
@@ -269,7 +277,7 @@ async def traffic_simulator():
 
 @app.get("/", response_class=HTMLResponse)
 async def get_dashboard(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html")
 
 @app.get("/service/{service_name}")
 async def get_service_status(service_name: str, force_error: bool = False):
@@ -309,6 +317,127 @@ async def reset_faults():
     gc.collect()
     logging.warning("FAULT RESET: All system faults cleared and memory leak collection triggered.")
     return {"status": "success", "faults": ACTIVE_FAULTS}
+
+# OpenAI Chat Endpoint Models
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatPayload(BaseModel):
+    messages: List[ChatMessage]
+
+@app.post("/api/chat")
+async def chat_with_agent(payload: ChatPayload):
+    if not os.getenv("OPENAI_API_KEY"):
+        return {
+            "role": "assistant",
+            "content": "⚠️ **OpenAI API Key is missing!** Please set the `OPENAI_API_KEY` environment variable in your host environment and rebuild the containers using `docker compose up --build -d`."
+        }
+
+    system_prompt = {
+        "role": "system",
+        "content": (
+            "You are an expert AI site reliability engineer and troubleshooting assistant for the Jarvis Target Stack.\n"
+            "You have access to tools that check the health of system services (payment_gateway, auth_provider, notification_engine), "
+            "inject various operational faults, reset faults, and read trailing service log files.\n"
+            "When a user asks you to diagnose, investigate, or fix issues, follow these steps:\n"
+            "1. Use `get_service_status` or `read_service_logs` to investigate active health issues.\n"
+            "2. If faults are active, you can use `reset_all_faults` or inject specific faults (using `inject_fault`) as requested.\n"
+            "3. Be concise, clear, and report metrics (e.g. latency, source) clearly. Always explain what actions you are taking."
+        )
+    }
+    
+    messages = [system_prompt] + [{"role": m.role, "content": m.content} for m in payload.messages]
+
+    server_params = StdioServerParameters(
+        command="python",
+        args=["/app/mcp_server.py"]
+    )
+
+    try:
+        async with stdio_client(server_params) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                
+                # Fetch MCP Tools
+                tools_result = await session.list_tools()
+                openai_tools = []
+                for tool in tools_result.tools:
+                    openai_tools.append({
+                        "type": "function",
+                        "function": {
+                            "name": tool.name,
+                            "description": tool.description,
+                            "parameters": tool.inputSchema
+                        }
+                    })
+                    
+                # Run conversation loop (max 5 turns to prevent infinite recursion)
+                max_turns = 5
+                for _ in range(max_turns):
+                    response = await openai_client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=messages,
+                        tools=openai_tools if openai_tools else None,
+                        tool_choice="auto" if openai_tools else None,
+                        temperature=0.2
+                    )
+                    
+                    response_message = response.choices[0].message
+                    
+                    # Store assistant message
+                    messages.append(response_message)
+                    
+                    if response_message.tool_calls:
+                        # Process Tool calls via the MCP Stdio Session
+                        for tool_call in response_message.tool_calls:
+                            tool_name = tool_call.function.name
+                            tool_args = json.loads(tool_call.function.arguments)
+                            
+                            logging.warning(f"AI AGENT MCP TOOL CALL: {tool_name}({tool_args})")
+                            
+                            try:
+                                tool_result = await session.call_tool(tool_name, tool_args)
+                                result_text = ""
+                                for item in tool_result.content:
+                                    if hasattr(item, "text"):
+                                        result_text += item.text
+                                    elif isinstance(item, dict) and "text" in item:
+                                        result_text += item["text"]
+                                        
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tool_call.id,
+                                    "name": tool_name,
+                                    "content": result_text
+                                })
+                            except Exception as te:
+                                logging.error(f"Error calling MCP tool {tool_name}: {str(te)}")
+                                messages.append({
+                                    "role": "tool",
+                                    "tool_call_id": tool_call.id,
+                                    "name": tool_name,
+                                    "content": json.dumps({"error": f"Failed to execute tool: {str(te)}"})
+                                })
+                        continue
+                    else:
+                        # Final text answer
+                        return {
+                            "role": "assistant",
+                            "content": response_message.content
+                        }
+                        
+                return {
+                    "role": "assistant",
+                    "content": response_message.content or "Error: Conversation exceeded tool execution limit."
+                }
+                
+    except Exception as e:
+        logging.error(f"Agent conversation loop error: {str(e)}")
+        return {
+            "role": "assistant",
+            "content": f"⚠️ **Error running AI agent session:** {str(e)}"
+        }
 
 @app.websocket("/ws/metrics")
 async def websocket_metrics(websocket: WebSocket):

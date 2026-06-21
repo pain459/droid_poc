@@ -29,6 +29,8 @@ services:
       - ./app:/app
       - ./logs:/var/log/app
     working_dir: /app
+    env_file:
+      - .env
     command: sh -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       - postgres

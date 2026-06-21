@@ -227,6 +227,53 @@
             transition: width 0.5s ease;
         }
 
+        /* Tab Layout Styling */
+        .tabs-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            gap: 1.25rem;
+        }
+
+        .tab-header {
+            display: flex;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.25rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.6rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            flex-direction: column;
+            gap: 1.25rem;
+            flex-grow: 1;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
         /* Controls Section */
         .controls-grid {
             display: grid;
@@ -374,6 +421,142 @@
             transform: scale(0.98);
         }
 
+        /* Chat Window styling */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 520px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 0.8rem 1rem;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .chat-bubble.user {
+            align-self: flex-end;
+            background-color: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-bubble.assistant {
+            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.03);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-bubble.assistant pre {
+            background-color: #030712;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #f3f4f6;
+        }
+
+        .chat-bubble.assistant code {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: rgba(255, 255, 255, 0.08);
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .chat-input-bar {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: var(--text-color);
+            padding: 0.6rem 0.8rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .chat-send-btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .chat-send-btn:hover {
+            opacity: 0.9;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            padding: 0.8rem 1rem;
+            border-radius: 14px;
+            border-bottom-left-radius: 2px;
+            font-size: 0.85rem;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-left: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite both;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: .2s; }
+        .typing-dot:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes typingDot {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
         /* Terminal Console */
         .terminal {
             background-color: var(--terminal-bg);
@@ -385,8 +568,7 @@
             color: #84cc16; /* Lime color for retro style */
             flex-grow: 1;
             overflow-y: auto;
-            max-height: 300px;
-            min-height: 200px;
+            height: 520px;
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -508,79 +690,132 @@
             </div>
         </div>
 
-        <!-- Right Panel: Controls & Terminal -->
+        <!-- Right Panel: Tabbed Controls, Chat, and Logs -->
         <div class="panel">
-            <div class="panel-title">Fault Injection Controls</div>
-            
-            <div class="controls-grid">
-                <!-- DB Down Fault -->
-                <div class="control-row">
-                    <div class="control-info">
-                        <span class="control-title">Database Down</span>
-                        <span class="control-desc">Simulate complete PostgreSQL failure (raises operational connection error).</span>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" id="fault-db_down" onchange="toggleFault('db_down')">
-                        <span class="slider"></span>
-                    </label>
+            <div class="tabs-container">
+                <div class="tab-header">
+                    <button id="btn-tab-faults" class="tab-btn active" onclick="switchTab('tab-faults')">Control Panel</button>
+                    <button id="btn-tab-chat" class="tab-btn" onclick="switchTab('tab-chat')">AI Agent Assistant</button>
+                    <button id="btn-tab-logs" class="tab-btn" onclick="switchTab('tab-logs')">System Logs</button>
                 </div>
 
-                <!-- Redis Down Fault -->
-                <div class="control-row">
-                    <div class="control-info">
-                        <span class="control-title">Redis Down</span>
-                        <span class="control-desc">Simulate Redis disconnection. Forces database fallbacks (Cache Misses).</span>
+                <!-- Tab 1: Fault Injection Panel -->
+                <div class="tab-content active" id="tab-faults">
+                    <div class="controls-grid">
+                        <!-- DB Down Fault -->
+                        <div class="control-row">
+                            <div class="control-info">
+                                <span class="control-title">Database Down</span>
+                                <span class="control-desc">Simulate complete PostgreSQL failure (raises operational connection error).</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="fault-db_down" onchange="toggleFault('db_down')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Redis Down Fault -->
+                        <div class="control-row">
+                            <div class="control-info">
+                                <span class="control-title">Redis Down</span>
+                                <span class="control-desc">Simulate Redis disconnection. Forces database fallbacks (Cache Misses).</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="fault-redis_down" onchange="toggleFault('redis_down')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- CPU Spike Fault -->
+                        <div class="control-row">
+                            <div class="control-info">
+                                <span class="control-title">Simulate CPU Spike</span>
+                                <span class="control-desc">Blocks execution briefly on requests to simulate thread exhaustion.</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="fault-cpu_spike" onchange="toggleFault('cpu_spike')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Memory Leak Fault -->
+                        <div class="control-row">
+                            <div class="control-info">
+                                <span class="control-title">Simulate Memory Leak</span>
+                                <span class="control-desc">Appends ~15MB allocation of random data per lookup request.</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="fault-memory_leak" onchange="toggleFault('memory_leak')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- DB Latency Slider -->
+                        <div class="range-slider-container">
+                            <div class="range-header">
+                                <span>Inject Database Latency</span>
+                                <span class="range-value"><span id="lbl-db_latency">0.0</span>s</span>
+                            </div>
+                            <input type="range" class="range-input" id="val-db_latency" min="0" max="5" step="0.5" value="0" onchange="slideLatency()">
+                        </div>
+
+                        <button class="reset-btn" onclick="resetAllFaults()">Clear All Active Faults</button>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" id="fault-redis_down" onchange="toggleFault('redis_down')">
-                        <span class="slider"></span>
-                    </label>
                 </div>
 
-                <!-- CPU Spike Fault -->
-                <div class="control-row">
-                    <div class="control-info">
-                        <span class="control-title">Simulate CPU Spike</span>
-                        <span class="control-desc">Blocks execution briefly on requests to simulate thread exhaustion.</span>
+                <!-- Tab 2: AI Troubleshooting Chat -->
+                <div class="tab-content" id="tab-chat">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chat-messages-box">
+                            <div class="chat-bubble assistant">
+                                Hello! I am your AI Site Reliability Engineer. I have access to tools that check service status, inject/reset faults, and view logs. How can I help you troubleshoot?
+                            </div>
+                        </div>
+                        <div id="typing-loader" class="typing-indicator">
+                            <span>SRE Agent is analyzing stack state</span>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                        <div class="chat-input-bar">
+                            <input type="text" id="chat-user-input" class="chat-input" placeholder="Ask me to diagnose or inject faults..." onkeydown="handleChatKey(event)">
+                            <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
+                        </div>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" id="fault-cpu_spike" onchange="toggleFault('cpu_spike')">
-                        <span class="slider"></span>
-                    </label>
                 </div>
 
-                <!-- Memory Leak Fault -->
-                <div class="control-row">
-                    <div class="control-info">
-                        <span class="control-title">Simulate Memory Leak</span>
-                        <span class="control-desc">Appends ~15MB allocation of random data per lookup request.</span>
+                <!-- Tab 3: System Logs -->
+                <div class="tab-content" id="tab-logs">
+                    <div id="terminal-console" class="terminal">
+                        <div class="terminal-line system">Waiting for log stream connection...</div>
                     </div>
-                    <label class="switch">
-                        <input type="checkbox" id="fault-memory_leak" onchange="toggleFault('memory_leak')">
-                        <span class="slider"></span>
-                    </label>
                 </div>
-
-                <!-- DB Latency Slider -->
-                <div class="range-slider-container">
-                    <div class="range-header">
-                        <span>Inject Database Latency</span>
-                        <span class="range-value"><span id="lbl-db_latency">0.0</span>s</span>
-                    </div>
-                    <input type="range" class="range-input" id="val-db_latency" min="0" max="5" step="0.5" value="0" onchange="slideLatency()">
-                </div>
-
-                <button class="reset-btn" onclick="resetAllFaults()">Clear All Active Faults</button>
-            </div>
-
-            <div class="panel-title" style="margin-top: 1rem;">Live Service Log Feed</div>
-            <div id="terminal-console" class="terminal">
-                <div class="terminal-line system">Waiting for log stream connection...</div>
             </div>
         </div>
     </div>
 
     <script>
+        // Tab switching
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // Show active tab
+            document.getElementById(tabId).classList.add('active');
+            
+            // Activate button
+            let btnId = 'btn-' + tabId;
+            document.getElementById(btnId).classList.add('active');
+            
+            // Scroll logs to bottom if switching to logs
+            if (tabId === 'tab-logs') {
+                const consoleEl = document.getElementById('terminal-console');
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+        }
+
         // WS connection handlers
         let metricsWs, logsWs;
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -639,7 +874,11 @@
             line.className = `terminal-line ${type}`;
             line.textContent = text;
             consoleEl.appendChild(line);
-            consoleEl.scrollTop = consoleEl.scrollHeight;
+            
+            // Only auto-scroll if user is near the bottom
+            if (consoleEl.scrollTop + consoleEl.clientHeight >= consoleEl.scrollHeight - 50) {
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
             
             // Limit screen density
             if (consoleEl.children.length > 150) {
@@ -649,7 +888,6 @@
 
         function updateDashboard(metrics) {
             for (const [service, data] of Object.entries(metrics)) {
-                // Update Badge and Card Status Classes
                 const card = document.getElementById(`card-${service}`);
                 const badge = document.getElementById(`badge-${service}`);
                 const latencyEl = document.getElementById(`latency-${service}`);
@@ -659,15 +897,12 @@
 
                 if (!card) continue;
 
-                // Status formatting
                 card.className = 'service-card ' + data.status.toLowerCase();
                 badge.className = 'badge ' + data.status.toLowerCase();
                 badge.textContent = data.status;
 
-                // Latency
                 latencyEl.textContent = data.latency_ms;
 
-                // Source
                 sourceEl.textContent = data.source;
                 if (data.source === 'cache') {
                     sourceEl.style.color = 'var(--success)';
@@ -677,7 +912,6 @@
                     sourceEl.style.color = 'var(--danger)';
                 }
 
-                // Cache Hit Ratio
                 const total = data.request_count;
                 const hits = data.cache_hits;
                 const ratio = total > 0 ? Math.round((hits / total) * 100) : 0;
@@ -733,7 +967,6 @@
                 const res = await fetch('/api/reset', { method: 'POST' });
                 const data = await res.json();
                 
-                // Reset UI elements
                 document.getElementById('fault-db_down').checked = false;
                 document.getElementById('fault-redis_down').checked = false;
                 document.getElementById('fault-cpu_spike').checked = false;
@@ -744,6 +977,103 @@
             } catch (err) {
                 console.error('Error resetting faults:', err);
             }
+        }
+
+        // Chat Logic
+        let chatHistory = [];
+
+        function handleChatKey(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        function parseMarkdown(text) {
+            if (!text) return "";
+            
+            // Escape HTML tags to prevent XSS
+            let html = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+            
+            // Fenced code blocks
+            html = html.replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>');
+            
+            // Inline code
+            html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+            
+            // Bold
+            html = html.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Newlines
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
+
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('chat-user-input');
+            const messageText = inputEl.value.trim();
+            if (!messageText) return;
+            
+            inputEl.value = '';
+            
+            // Render user bubble
+            appendChatBubble(messageText, 'user');
+            
+            // Update history
+            chatHistory.push({ role: 'user', content: messageText });
+            
+            // Show loader
+            const loader = document.getElementById('typing-loader');
+            loader.style.display = 'flex';
+            
+            // Scroll to bottom
+            const messagesBox = document.getElementById('chat-messages-box');
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+                
+                const data = await response.json();
+                
+                // Hide loader
+                loader.style.display = 'none';
+                
+                // Render assistant bubble
+                appendChatBubble(data.content, 'assistant');
+                
+                // Save assistant message to history
+                chatHistory.push({ role: 'assistant', content: data.content });
+                
+                // Refresh fault checkboxes and sliders in case LLM toggled them
+                fetchFaults();
+                
+            } catch (err) {
+                loader.style.display = 'none';
+                appendChatBubble("⚠️ Error connecting to AI Agent endpoint.", 'assistant');
+                console.error(err);
+            }
+        }
+
+        function appendChatBubble(text, sender) {
+            const messagesBox = document.getElementById('chat-messages-box');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${sender}`;
+            
+            if (sender === 'assistant') {
+                bubble.innerHTML = parseMarkdown(text);
+            } else {
+                bubble.textContent = text;
+            }
+            
+            messagesBox.appendChild(bubble);
+            messagesBox.scrollTop = messagesBox.scrollHeight;
         }
 
         // Init
