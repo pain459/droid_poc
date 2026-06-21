@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvis Target Stack Operations Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --terminal-bg: #030712;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1rem;
+        }
+
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pulse-icon {
+            width: 14px;
+            height: 14px;
+            background-color: var(--success);
+            border-radius: 50%;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #f3f4f6, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            flex-grow: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Metrics Card Section */
+        .service-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: var(--primary);
+        }
+
+        .service-card.healthy::before { background-color: var(--success); }
+        .service-card.degraded::before { background-color: var(--warning); }
+        .service-card.critical::before { background-color: var(--danger); }
+
+        .service-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .service-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.healthy { background-color: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge.degraded { background-color: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge.critical { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        .metrics-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .metric-unit {
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-left: 2px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 9999px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Controls Section */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.25rem;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .control-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            max-width: 70%;
+        }
+
+        .control-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .control-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Switch toggle styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--danger);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Range Slider styling */
+        .range-slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .range-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .range-value {
+            color: var(--warning);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .range-input {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .range-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--warning);
+            cursor: pointer;
+            transition: background .15s ease-in-out;
+        }
+
+        .reset-btn {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+            text-align: center;
+        }
+
+        .reset-btn:hover {
+            opacity: 0.9;
+        }
+
+        .reset-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Terminal Console */
+        .terminal {
+            background-color: var(--terminal-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #84cc16; /* Lime color for retro style */
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 300px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.8);
+        }
+
+        .terminal-line {
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .terminal-line.error { color: #f87171; }
+        .terminal-line.warning { color: #fbbf24; }
+        .terminal-line.info { color: #34d399; }
+        .terminal-line.system { color: #a78bfa; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title-container">
+            <div class="pulse-icon"></div>
+            <div>
+                <h1>Jarvis Target Stack</h1>
+                <div class="subtitle">Real-time Operations & Fault Injection Interface</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <!-- Left Panel: Real-time Metrics -->
+        <div class="panel">
+            <div class="panel-title">
+                <span>Active Services Status</span>
+                <span class="subtitle" id="connection-status" style="color: var(--danger);">DISCONNECTED</span>
+            </div>
+            
+            <div class="service-cards">
+                <!-- Payment Gateway Card -->
+                <div id="card-payment_gateway" class="service-card healthy">
+                    <div class="service-card-header">
+                        <span class="service-name">Payment Gateway</span>
+                        <span id="badge-payment_gateway" class="badge healthy">Healthy</span>
+                    </div>
+                    <div class="metrics-details">
+                        <div class="metric-item">
+                            <span class="metric-label">Latency</span>
+                            <span class="metric-value"><span id="latency-payment_gateway">45</span><span class="metric-unit">ms</span></span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Source</span>
+                            <span class="metric-value" id="source-payment_gateway" style="font-size: 1rem; color: var(--primary); text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 4px;">database</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                            <span>Cache Hit Ratio</span>
+                            <span id="hitratio-payment_gateway">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="progress-payment_gateway" class="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auth Provider Card -->
+                <div id="card-auth_provider" class="service-card degraded">
+                    <div class="service-card-header">
+                        <span class="service-name">Auth Provider</span>
+                        <span id="badge-auth_provider" class="badge degraded">Degraded</span>
+                    </div>
+                    <div class="metrics-details">
+                        <div class="metric-item">
+                            <span class="metric-label">Latency</span>
+                            <span class="metric-value"><span id="latency-auth_provider">1200</span><span class="metric-unit">ms</span></span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Source</span>
+                            <span class="metric-value" id="source-auth_provider" style="font-size: 1rem; color: var(--primary); text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 4px;">database</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                            <span>Cache Hit Ratio</span>
+                            <span id="hitratio-auth_provider">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="progress-auth_provider" class="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Engine Card -->
+                <div id="card-notification_engine" class="service-card healthy">
+                    <div class="service-card-header">
+                        <span class="service-name">Notification Engine</span>
+                        <span id="badge-notification_engine" class="badge healthy">Healthy</span>
+                    </div>
+                    <div class="metrics-details">
+                        <div class="metric-item">
+                            <span class="metric-label">Latency</span>
+                            <span class="metric-value"><span id="latency-notification_engine">12</span><span class="metric-unit">ms</span></span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Source</span>
+                            <span class="metric-value" id="source-notification_engine" style="font-size: 1rem; color: var(--primary); text-transform: uppercase; font-family: 'JetBrains Mono'; margin-top: 4px;">database</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                            <span>Cache Hit Ratio</span>
+                            <span id="hitratio-notification_engine">0%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="progress-notification_engine" class="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Controls & Terminal -->
+        <div class="panel">
+            <div class="panel-title">Fault Injection Controls</div>
+            
+            <div class="controls-grid">
+                <!-- DB Down Fault -->
+                <div class="control-row">
+                    <div class="control-info">
+                        <span class="control-title">Database Down</span>
+                        <span class="control-desc">Simulate complete PostgreSQL failure (raises operational connection error).</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="fault-db_down" onchange="toggleFault('db_down')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Redis Down Fault -->
+                <div class="control-row">
+                    <div class="control-info">
+                        <span class="control-title">Redis Down</span>
+                        <span class="control-desc">Simulate Redis disconnection. Forces database fallbacks (Cache Misses).</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="fault-redis_down" onchange="toggleFault('redis_down')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- CPU Spike Fault -->
+                <div class="control-row">
+                    <div class="control-info">
+                        <span class="control-title">Simulate CPU Spike</span>
+                        <span class="control-desc">Blocks execution briefly on requests to simulate thread exhaustion.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="fault-cpu_spike" onchange="toggleFault('cpu_spike')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Memory Leak Fault -->
+                <div class="control-row">
+                    <div class="control-info">
+                        <span class="control-title">Simulate Memory Leak</span>
+                        <span class="control-desc">Appends ~15MB allocation of random data per lookup request.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="fault-memory_leak" onchange="toggleFault('memory_leak')">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- DB Latency Slider -->
+                <div class="range-slider-container">
+                    <div class="range-header">
+                        <span>Inject Database Latency</span>
+                        <span class="range-value"><span id="lbl-db_latency">0.0</span>s</span>
+                    </div>
+                    <input type="range" class="range-input" id="val-db_latency" min="0" max="5" step="0.5" value="0" onchange="slideLatency()">
+                </div>
+
+                <button class="reset-btn" onclick="resetAllFaults()">Clear All Active Faults</button>
+            </div>
+
+            <div class="panel-title" style="margin-top: 1rem;">Live Service Log Feed</div>
+            <div id="terminal-console" class="terminal">
+                <div class="terminal-line system">Waiting for log stream connection...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WS connection handlers
+        let metricsWs, logsWs;
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+
+        function connectMetrics() {
+            metricsWs = new WebSocket(`${protocol}//${host}/ws/metrics`);
+            
+            metricsWs.onopen = () => {
+                const connStatus = document.getElementById('connection-status');
+                connStatus.textContent = 'LIVE';
+                connStatus.style.color = 'var(--success)';
+            };
+
+            metricsWs.onmessage = (event) => {
+                const metrics = JSON.parse(event.data);
+                updateDashboard(metrics);
+            };
+
+            metricsWs.onclose = () => {
+                const connStatus = document.getElementById('connection-status');
+                connStatus.textContent = 'DISCONNECTED';
+                connStatus.style.color = 'var(--danger)';
+                setTimeout(connectMetrics, 2000); // Reconnect
+            };
+        }
+
+        function connectLogs() {
+            logsWs = new WebSocket(`${protocol}//${host}/ws/logs`);
+            const consoleEl = document.getElementById('terminal-console');
+
+            logsWs.onopen = () => {
+                appendTerminalLine('System connected to backend log stream.', 'system');
+            };
+
+            logsWs.onmessage = (event) => {
+                const line = event.data;
+                let type = 'info';
+                if (line.includes('[ERROR]') || line.includes('CRITICAL')) {
+                    type = 'error';
+                } else if (line.includes('[WARNING]') || line.includes('FAULT')) {
+                    type = 'warning';
+                }
+                appendTerminalLine(line, type);
+            };
+
+            logsWs.onclose = () => {
+                appendTerminalLine('Log stream disconnected. Retrying...', 'system');
+                setTimeout(connectLogs, 2000); // Reconnect
+            };
+        }
+
+        function appendTerminalLine(text, type) {
+            const consoleEl = document.getElementById('terminal-console');
+            const line = document.createElement('div');
+            line.className = `terminal-line ${type}`;
+            line.textContent = text;
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            
+            // Limit screen density
+            if (consoleEl.children.length > 150) {
+                consoleEl.removeChild(consoleEl.firstChild);
+            }
+        }
+
+        function updateDashboard(metrics) {
+            for (const [service, data] of Object.entries(metrics)) {
+                // Update Badge and Card Status Classes
+                const card = document.getElementById(`card-${service}`);
+                const badge = document.getElementById(`badge-${service}`);
+                const latencyEl = document.getElementById(`latency-${service}`);
+                const sourceEl = document.getElementById(`source-${service}`);
+                const hitratioEl = document.getElementById(`hitratio-${service}`);
+                const progressEl = document.getElementById(`progress-${service}`);
+
+                if (!card) continue;
+
+                // Status formatting
+                card.className = 'service-card ' + data.status.toLowerCase();
+                badge.className = 'badge ' + data.status.toLowerCase();
+                badge.textContent = data.status;
+
+                // Latency
+                latencyEl.textContent = data.latency_ms;
+
+                // Source
+                sourceEl.textContent = data.source;
+                if (data.source === 'cache') {
+                    sourceEl.style.color = 'var(--success)';
+                } else if (data.source === 'database') {
+                    sourceEl.style.color = 'var(--primary)';
+                } else {
+                    sourceEl.style.color = 'var(--danger)';
+                }
+
+                // Cache Hit Ratio
+                const total = data.request_count;
+                const hits = data.cache_hits;
+                const ratio = total > 0 ? Math.round((hits / total) * 100) : 0;
+                hitratioEl.textContent = `${ratio}% (${hits}/${total})`;
+                progressEl.style.width = `${ratio}%`;
+            }
+        }
+
+        // Fault Actions
+        async function fetchFaults() {
+            try {
+                const res = await fetch('/api/faults');
+                const faults = await res.json();
+                
+                document.getElementById('fault-db_down').checked = faults.db_down;
+                document.getElementById('fault-redis_down').checked = faults.redis_down;
+                document.getElementById('fault-cpu_spike').checked = faults.cpu_spike;
+                document.getElementById('fault-memory_leak').checked = faults.memory_leak;
+                
+                document.getElementById('val-db_latency').value = faults.db_latency;
+                document.getElementById('lbl-db_latency').textContent = faults.db_latency.toFixed(1);
+            } catch (err) {
+                console.error('Error fetching faults:', err);
+            }
+        }
+
+        async function toggleFault(faultName) {
+            const checkbox = document.getElementById(`fault-${faultName}`);
+            await updateFaultAPI(faultName, checkbox.checked);
+        }
+
+        async function slideLatency() {
+            const slider = document.getElementById('val-db_latency');
+            const val = parseFloat(slider.value);
+            document.getElementById('lbl-db_latency').textContent = val.toFixed(1);
+            await updateFaultAPI('db_latency', val);
+        }
+
+        async function updateFaultAPI(fault, value) {
+            try {
+                await fetch('/api/faults', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fault, value })
+                });
+            } catch (err) {
+                console.error('Error updating fault:', err);
+            }
+        }
+
+        async function resetAllFaults() {
+            try {
+                const res = await fetch('/api/reset', { method: 'POST' });
+                const data = await res.json();
+                
+                // Reset UI elements
+                document.getElementById('fault-db_down').checked = false;
+                document.getElementById('fault-redis_down').checked = false;
+                document.getElementById('fault-cpu_spike').checked = false;
+                document.getElementById('fault-memory_leak').checked = false;
+                
+                document.getElementById('val-db_latency').value = 0;
+                document.getElementById('lbl-db_latency').textContent = '0.0';
+            } catch (err) {
+                console.error('Error resetting faults:', err);
+            }
+        }
+
+        // Init
+        window.addEventListener('load', () => {
+            connectMetrics();
+            connectLogs();
+            fetchFaults();
+        });
+    </script>
+</body>
+</html>
