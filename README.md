@@ -125,9 +125,9 @@ PATH=venv/bin:$PATH venv/bin/fastmcp run app/mcp_server.py
 ### 3. Debugging with the MCP Inspector
 To run a local web-based client interface for testing the tools interactively:
 ```bash
-PATH=venv/bin:$PATH venv/bin/fastmcp dev app/mcp_server.py
+PATH=venv/bin:$PATH venv/bin/fastmcp dev inspector app/mcp_server.py
 ```
-This will start the MCP inspector in your browser (usually at `http://localhost:5173`) allowing you to run and verify the tools.
+This will start the MCP inspector in your browser (usually dynamically allocated, e.g., `http://localhost:6274/?MCP_PROXY_AUTH_TOKEN=...`) allowing you to run and verify the tools.
 
 ---
 
