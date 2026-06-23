@@ -323,21 +323,104 @@ async def get_agent_workspace(request: Request):
     return templates.TemplateResponse(request=request, name="agent.html")
 
 # OpenAI Chat Endpoint Models
-class ChatMessage(BaseModel):
-    role: str
-    content: str
+class ChatInput(BaseModel):
+    message: str
+    session_id: str = "default"
 
-class ChatPayload(BaseModel):
-    messages: List[ChatMessage]
+class SessionDeleteInput(BaseModel):
+    session_id: str
+
+class SessionRenameInput(BaseModel):
+    session_id: str
+    title: str
+
+import uuid
+from datetime import datetime
+
+# Global agent chat sessions storage
+default_sid = "default"
+AGENT_SESSIONS = {
+    default_sid: {
+        "id": default_sid,
+        "title": "Default Session",
+        "created_at": datetime.utcnow().isoformat(),
+        "messages": []
+    }
+}
+
+@app.get("/api/chat/sessions")
+async def get_chat_sessions():
+    return [
+        {
+            "id": s["id"],
+            "title": s["title"],
+            "created_at": s["created_at"],
+            "message_count": len(s["messages"])
+        }
+        for s in AGENT_SESSIONS.values()
+    ]
+
+@app.post("/api/chat/sessions/create")
+async def create_chat_session():
+    sid = str(uuid.uuid4())
+    title = f"Diagnostic Session {len(AGENT_SESSIONS) + 1}"
+    AGENT_SESSIONS[sid] = {
+        "id": sid,
+        "title": title,
+        "created_at": datetime.utcnow().isoformat(),
+        "messages": []
+    }
+    return AGENT_SESSIONS[sid]
+
+@app.post("/api/chat/sessions/delete")
+async def delete_chat_session(payload: SessionDeleteInput):
+    sid = payload.session_id
+    if sid == "default":
+        AGENT_SESSIONS["default"]["messages"] = []
+        AGENT_SESSIONS["default"]["title"] = "Default Session"
+    elif sid in AGENT_SESSIONS:
+        del AGENT_SESSIONS[sid]
+    return {"status": "success"}
+
+@app.post("/api/chat/sessions/rename")
+async def rename_chat_session(payload: SessionRenameInput):
+    sid = payload.session_id
+    if sid in AGENT_SESSIONS:
+        AGENT_SESSIONS[sid]["title"] = payload.title
+        return {"status": "success", "title": payload.title}
+    raise HTTPException(status_code=404, detail="Session not found")
+
+@app.get("/api/chat/sessions/{session_id}/history")
+async def get_session_history(session_id: str):
+    if session_id not in AGENT_SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return AGENT_SESSIONS[session_id]["messages"]
 
 @app.post("/api/chat")
-async def chat_with_agent(payload: ChatPayload):
+async def chat_with_agent(payload: ChatInput):
     if not os.getenv("OPENAI_API_KEY"):
         return {
             "role": "assistant",
             "content": "⚠️ **OpenAI API Key is missing!** Please set the `OPENAI_API_KEY` environment variable in your host environment and rebuild the containers using `docker compose up --build -d`.",
             "tool_calls": []
         }
+
+    sid = payload.session_id
+    if sid not in AGENT_SESSIONS:
+        sid = "default"
+
+    # If first user message, dynamically rename the session title
+    if not AGENT_SESSIONS[sid]["messages"]:
+        preview = payload.message.strip()
+        if len(preview) > 30:
+            preview = preview[:27] + "..."
+        AGENT_SESSIONS[sid]["title"] = preview
+
+    # Append user message to global history
+    AGENT_SESSIONS[sid]["messages"].append({
+        "role": "user",
+        "content": payload.message
+    })
 
     system_prompt = {
         "role": "system",
@@ -355,7 +438,13 @@ async def chat_with_agent(payload: ChatPayload):
         )
     }
     
-    messages = [system_prompt] + [{"role": m.role, "content": m.content} for m in payload.messages]
+    # Reconstruct messages history for OpenAI
+    messages = [system_prompt]
+    for msg in AGENT_SESSIONS[sid]["messages"]:
+        messages.append({
+            "role": msg["role"],
+            "content": msg["content"]
+        })
 
     server_params = StdioServerParameters(
         command="python",
@@ -444,17 +533,21 @@ async def chat_with_agent(payload: ChatPayload):
                         continue
                     else:
                         # Final text answer
-                        return {
+                        assistant_response = {
                             "role": "assistant",
                             "content": response_message.content,
                             "tool_calls": tool_calls_log
                         }
+                        AGENT_SESSIONS[sid]["messages"].append(assistant_response)
+                        return assistant_response
                         
-                return {
+                assistant_response = {
                     "role": "assistant",
                     "content": response_message.content or "Error: Conversation exceeded tool execution limit.",
                     "tool_calls": tool_calls_log
                 }
+                AGENT_SESSIONS[sid]["messages"].append(assistant_response)
+                return assistant_response
                 
     except Exception as e:
         logging.error(f"Agent conversation loop error: {str(e)}")
