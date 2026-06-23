@@ -318,6 +318,10 @@ async def reset_faults():
     logging.warning("FAULT RESET: All system faults cleared and memory leak collection triggered.")
     return {"status": "success", "faults": ACTIVE_FAULTS}
 
+@app.get("/agent", response_class=HTMLResponse)
+async def get_agent_workspace(request: Request):
+    return templates.TemplateResponse(request=request, name="agent.html")
+
 # OpenAI Chat Endpoint Models
 class ChatMessage(BaseModel):
     role: str
@@ -331,7 +335,8 @@ async def chat_with_agent(payload: ChatPayload):
     if not os.getenv("OPENAI_API_KEY"):
         return {
             "role": "assistant",
-            "content": "⚠️ **OpenAI API Key is missing!** Please set the `OPENAI_API_KEY` environment variable in your host environment and rebuild the containers using `docker compose up --build -d`."
+            "content": "⚠️ **OpenAI API Key is missing!** Please set the `OPENAI_API_KEY` environment variable in your host environment and rebuild the containers using `docker compose up --build -d`.",
+            "tool_calls": []
         }
 
     system_prompt = {
@@ -339,11 +344,14 @@ async def chat_with_agent(payload: ChatPayload):
         "content": (
             "You are an expert AI site reliability engineer and troubleshooting assistant for the Jarvis Target Stack.\n"
             "You have access to tools that check the health of system services (payment_gateway, auth_provider, notification_engine), "
-            "inject various operational faults, reset faults, and read trailing service log files.\n"
-            "When a user asks you to diagnose, investigate, or fix issues, follow these steps:\n"
-            "1. Use `get_service_status` or `read_service_logs` to investigate active health issues.\n"
-            "2. If faults are active, you can use `reset_all_faults` or inject specific faults (using `inject_fault`) as requested.\n"
-            "3. Be concise, clear, and report metrics (e.g. latency, source) clearly. Always explain what actions you are taking."
+            "read trailing service log files, and inspect active system faults.\n"
+            "Your main objective is DIAGNOSIS and EXPLANATION of faults to help the operator understand what went wrong, "
+            "NOT automatically repairing the system.\n"
+            "When a user asks you to investigate, troubleshoot, or check health:\n"
+            "1. Use tools like `get_service_status`, `get_active_faults`, and `read_service_logs` to analyze the system state.\n"
+            "2. Explain your reasoning and diagnostics in detail. Identify exactly which services are failing or degraded, pointing out relevant latencies, sources, and log errors.\n"
+            "3. Propose a root-cause explanation (e.g. database down, Redis cache down, CPU throttling) and recommend corrective actions.\n"
+            "4. DO NOT call `reset_all_faults` or modify the system state unless the user explicitly commands you to perform a repair action."
         )
     }
     
@@ -353,6 +361,8 @@ async def chat_with_agent(payload: ChatPayload):
         command="python",
         args=["/app/mcp_server.py"]
     )
+
+    tool_calls_log = []
 
     try:
         async with stdio_client(server_params) as (read, write):
@@ -405,6 +415,13 @@ async def chat_with_agent(payload: ChatPayload):
                                     elif isinstance(item, dict) and "text" in item:
                                         result_text += item["text"]
                                         
+                                # Log tool call and result
+                                tool_calls_log.append({
+                                    "name": tool_name,
+                                    "arguments": tool_args,
+                                    "result": result_text
+                                })
+
                                 messages.append({
                                     "role": "tool",
                                     "tool_call_id": tool_call.id,
@@ -413,6 +430,11 @@ async def chat_with_agent(payload: ChatPayload):
                                 })
                             except Exception as te:
                                 logging.error(f"Error calling MCP tool {tool_name}: {str(te)}")
+                                tool_calls_log.append({
+                                    "name": tool_name,
+                                    "arguments": tool_args,
+                                    "result": f"Error: {str(te)}"
+                                })
                                 messages.append({
                                     "role": "tool",
                                     "tool_call_id": tool_call.id,
@@ -424,19 +446,22 @@ async def chat_with_agent(payload: ChatPayload):
                         # Final text answer
                         return {
                             "role": "assistant",
-                            "content": response_message.content
+                            "content": response_message.content,
+                            "tool_calls": tool_calls_log
                         }
                         
                 return {
                     "role": "assistant",
-                    "content": response_message.content or "Error: Conversation exceeded tool execution limit."
+                    "content": response_message.content or "Error: Conversation exceeded tool execution limit.",
+                    "tool_calls": tool_calls_log
                 }
                 
     except Exception as e:
         logging.error(f"Agent conversation loop error: {str(e)}")
         return {
             "role": "assistant",
-            "content": f"⚠️ **Error running AI agent session:** {str(e)}"
+            "content": f"⚠️ **Error running AI agent session:** {str(e)}",
+            "tool_calls": tool_calls_log
         }
 
 @app.websocket("/ws/metrics")

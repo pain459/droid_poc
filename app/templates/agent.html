@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRE AI Debugger Workspace - Jarvis Target Stack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #080c14;
+            --card-bg: rgba(17, 24, 39, 0.65);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --terminal-bg: #030712;
+            --accent: #8b5cf6; /* purple accent for AI agent */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 5% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 45%),
+                              radial-gradient(circle at 95% 50%, rgba(59, 130, 246, 0.06) 0%, transparent 45%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            overflow-x: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 1rem;
+        }
+
+        .header-title-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .agent-badge-pulse {
+            width: 14px;
+            height: 14px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #f3f4f6, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Three-Column Workspace Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 280px 1fr 380px;
+            gap: 1.5rem;
+            flex-grow: 1;
+            height: calc(100vh - 120px);
+            min-height: 500px;
+        }
+
+        @media (max-width: 1200px) {
+            .workspace {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        .workspace-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-content {
+            padding: 1.25rem;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* 1. Sidebar Tool Inventory styling */
+        .tool-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .tool-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+
+        .tool-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #c084fc;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .tool-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* 2. Main Chat Workspace styling */
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 0.9rem 1.1rem;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .chat-bubble.user {
+            align-self: flex-end;
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-bubble.assistant {
+            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.03);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-bubble.assistant pre {
+            background-color: var(--terminal-bg);
+            padding: 0.6rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: #f3f4f6;
+        }
+
+        .chat-bubble.assistant code {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: rgba(255, 255, 255, 0.06);
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .chat-bubble.assistant strong {
+            font-weight: 600;
+            color: #e9d5ff;
+        }
+
+        /* Quick actions buttons */
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            overflow-x: auto;
+            padding-bottom: 0.25rem;
+        }
+
+        .quick-btn {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            color: #c084fc;
+            padding: 0.45rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .quick-btn:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .chat-input-bar {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            color: var(--text-color);
+            padding: 0.7rem 0.9rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: rgba(139, 92, 246, 0.4);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .chat-send-btn {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0.7rem 1.4rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .chat-send-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.02);
+            color: var(--text-muted);
+            padding: 0.8rem 1rem;
+            border-radius: 14px;
+            border-bottom-left-radius: 2px;
+            font-size: 0.8rem;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .typing-dot {
+            width: 5px;
+            height: 5px;
+            background-color: var(--text-muted);
+            border-radius: 50%;
+            animation: typingDot 1.4s infinite both;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: .2s; }
+        .typing-dot:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes typingDot {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 3. Diagnostic Trace feed styling */
+        .trace-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: 100%;
+        }
+
+        .trace-placeholder {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 2rem;
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        .trace-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            padding-right: 0.25rem;
+        }
+
+        .trace-node {
+            border-left: 2px solid rgba(139, 92, 246, 0.3);
+            padding-left: 1rem;
+            position: relative;
+            margin-left: 8px;
+        }
+
+        .trace-node::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 2px;
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .trace-node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 0.35rem;
+        }
+
+        .trace-node-args {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.4rem;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .trace-node-result-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: #84cc16; /* terminal green */
+            background-color: var(--terminal-bg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 0.5rem;
+            max-height: 180px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title-container">
+            <div class="agent-badge-pulse"></div>
+            <div>
+                <h1>Jarvis AI SRE Debugger</h1>
+                <div class="subtitle">Autonomous Model Context Protocol (MCP) Troubleshooting Workspace</div>
+            </div>
+        </div>
+        <a href="/" class="back-btn">← Back to Operations Panel</a>
+    </header>
+
+    <div class="workspace">
+        <!-- Column 1: MCP Agent Tool Inventory -->
+        <div class="workspace-panel">
+            <div class="panel-header">
+                <span>Agent Tools Inventory</span>
+                <span class="subtitle" style="color: var(--accent); font-family: 'JetBrains Mono'; font-size: 0.7rem;">MCP STDIO</span>
+            </div>
+            <div class="panel-content">
+                <div class="tool-list">
+                    <div class="tool-item">
+                        <span class="tool-name">get_service_status</span>
+                        <span class="tool-desc">Queries health, response latency (ms), and cache source of PAYMENT_GATEWAY, AUTH_PROVIDER, or NOTIFICATION_ENGINE.</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">get_active_faults</span>
+                        <span class="tool-desc">Inspects currently active faults injected in database connections, latency profiles, CPU spike, and memory allocations.</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">read_service_logs</span>
+                        <span class="tool-desc">Fetches trailing entries of container service logs (`/var/log/app/service.log`) to scan stacktraces and warnings.</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">inject_fault</span>
+                        <span class="tool-desc">Forces custom faults. Note: Agent only uses this if explicitly commanded to simulate errors.</span>
+                    </div>
+                    <div class="tool-item">
+                        <span class="tool-name">reset_all_faults</span>
+                        <span class="tool-desc">Resets all faults. Note: Agent only uses this if explicitly requested to restore service.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Conversational Chat Interface -->
+        <div class="workspace-panel" style="padding: 1.25rem;">
+            <div class="chat-area">
+                <div class="chat-messages" id="chat-messages-box">
+                    <div class="chat-bubble assistant">
+                        <strong>Jarvis Agent:</strong> Hello! I am your AI Site Reliability Engineer. I am connected directly to the system using Model Context Protocol (MCP). 
+                        <br><br>
+                        I can run diagnostics, inspect service logs, and explain what is causing system issues. How would you like me to inspect the stack?
+                    </div>
+                </div>
+                
+                <div id="typing-loader" class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <span id="agent-thinking-state">Agent executing MCP diagnostic tools...</span>
+                </div>
+
+                <!-- Quick Prompts Buttons -->
+                <div class="quick-actions">
+                    <button class="quick-btn" onclick="sendQuickPrompt('Analyze the current health of all services')">🔍 Diagnose Stack Health</button>
+                    <button class="quick-btn" onclick="sendQuickPrompt('Scan the logs for any recent warnings or error logs')">📄 Inspect Error Logs</button>
+                    <button class="quick-btn" onclick="sendQuickPrompt('Check if there are any active injected faults')">⚠️ Check Active Faults</button>
+                </div>
+
+                <div class="chat-input-bar">
+                    <input type="text" id="chat-user-input" class="chat-input" placeholder="Ask the agent to diagnose issues..." onkeydown="handleChatKey(event)">
+                    <button class="chat-send-btn" onclick="sendChatMessage()">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 3: AI SRE Tool Trace Execution Log -->
+        <div class="workspace-panel">
+            <div class="panel-header">
+                <span>Agent Execution Trace</span>
+                <span class="subtitle" style="color: var(--success); font-family: 'JetBrains Mono'; font-size: 0.75rem;">LIVE FLOW</span>
+            </div>
+            <div class="panel-content" id="trace-panel-content">
+                <div class="trace-placeholder" id="trace-placeholder">
+                    No active diagnostics session. <br>Submit a query or click a quick action above to view the agent's real-time tool execution trace.
+                </div>
+                <div class="trace-list" id="trace-list-box" style="display: none;">
+                    <!-- Dynamically populated tool steps -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chatHistory = [];
+
+        function handleChatKey(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        function sendQuickPrompt(promptText) {
+            document.getElementById('chat-user-input').value = promptText;
+            sendChatMessage();
+        }
+
+        function parseMarkdown(text) {
+            if (!text) return "";
+            
+            // Escape HTML tags to prevent XSS
+            let html = text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+            
+            // Fenced code blocks
+            html = html.replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>');
+            
+            // Inline code
+            html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+            
+            // Bold
+            html = html.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+            
+            // Newlines
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
+
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('chat-user-input');
+            const messageText = inputEl.value.trim();
+            if (!messageText) return;
+            
+            inputEl.value = '';
+            
+            // Append User bubble
+            appendChatBubble(messageText, 'user');
+            
+            // Save to history
+            chatHistory.push({ role: 'user', content: messageText });
+            
+            // Show typing indicator
+            const loader = document.getElementById('typing-loader');
+            loader.style.display = 'flex';
+            
+            // Clear or prepare trace
+            prepareTraceFeed();
+            
+            const messagesBox = document.getElementById('chat-messages-box');
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messages: chatHistory })
+                });
+                
+                const data = await response.json();
+                
+                // Hide typing loader
+                loader.style.display = 'none';
+                
+                // Render agent response bubble
+                appendChatBubble(data.content, 'assistant');
+                
+                // Save agent response
+                chatHistory.push({ role: 'assistant', content: data.content });
+                
+                // Render execution tool trace logs
+                renderExecutionTrace(data.tool_calls);
+                
+            } catch (err) {
+                loader.style.display = 'none';
+                appendChatBubble("⚠️ Connection error while running AI agent diagnostic session.", 'assistant');
+                console.error(err);
+            }
+        }
+
+        function appendChatBubble(text, sender) {
+            const messagesBox = document.getElementById('chat-messages-box');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${sender}`;
+            
+            if (sender === 'assistant') {
+                bubble.innerHTML = `<strong>Jarvis Agent:</strong><br>${parseMarkdown(text)}`;
+            } else {
+                bubble.textContent = text;
+            }
+            
+            messagesBox.appendChild(bubble);
+            messagesBox.scrollTop = messagesBox.scrollHeight;
+        }
+
+        function prepareTraceFeed() {
+            const placeholder = document.getElementById('trace-placeholder');
+            const listContainer = document.getElementById('trace-list-box');
+            
+            placeholder.style.display = 'none';
+            listContainer.style.display = 'flex';
+            listContainer.innerHTML = '<div class="subtitle" style="font-style: italic; color: var(--text-muted); font-size: 0.75rem;">Initializing MCP connection...</div>';
+        }
+
+        function renderExecutionTrace(toolCalls) {
+            const listContainer = document.getElementById('trace-list-box');
+            listContainer.innerHTML = '';
+            
+            if (!toolCalls || toolCalls.length === 0) {
+                listContainer.innerHTML = '<div class="trace-placeholder" style="margin-top: 1rem;">No tools were executed during this turn. The agent answered directly using context.</div>';
+                return;
+            }
+            
+            toolCalls.forEach((call, index) => {
+                const node = document.createElement('div');
+                node.className = 'trace-node';
+                
+                // Header
+                const header = document.createElement('div');
+                header.className = 'trace-node-header';
+                header.innerHTML = `<span>[Step ${index + 1}] ${call.name}</span><span style="font-size: 0.65rem; color: var(--success); text-transform: uppercase;">tool call</span>`;
+                node.appendChild(header);
+                
+                // Arguments
+                const args = document.createElement('div');
+                args.className = 'trace-node-args';
+                args.textContent = `Args: ${JSON.stringify(call.arguments)}`;
+                node.appendChild(args);
+                
+                // Result Box
+                const resultBox = document.createElement('div');
+                resultBox.className = 'trace-node-result-box';
+                resultBox.textContent = formatResultContent(call.result);
+                node.appendChild(resultBox);
+                
+                listContainer.appendChild(node);
+            });
+            
+            // Scroll trace panel to top
+            document.getElementById('trace-panel-content').scrollTop = 0;
+        }
+
+        function formatResultContent(content) {
+            if (!content) return "No response data.";
+            try {
+                // Check if it's already a JSON string, pretty print it
+                const parsed = JSON.parse(content);
+                return JSON.stringify(parsed, null, 2);
+            } catch (e) {
+                return content;
+            }
+        }
+    </script>
+</body>
+</html>

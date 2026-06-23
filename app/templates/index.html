@@ -19,6 +19,7 @@
             --warning: #f59e0b;
             --danger: #ef4444;
             --terminal-bg: #030712;
+            --accent: #8b5cf6;
         }
 
         * {
@@ -421,141 +422,7 @@
             transform: scale(0.98);
         }
 
-        /* Chat Window styling */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 520px;
-            background: rgba(255, 255, 255, 0.01);
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            border-radius: 12px;
-            overflow: hidden;
-        }
 
-        .chat-messages {
-            flex-grow: 1;
-            padding: 1rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .chat-bubble {
-            max-width: 85%;
-            padding: 0.8rem 1rem;
-            border-radius: 14px;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
-
-        .chat-bubble.user {
-            align-self: flex-end;
-            background-color: rgba(59, 130, 246, 0.2);
-            color: #93c5fd;
-            border: 1px solid rgba(59, 130, 246, 0.25);
-            border-bottom-right-radius: 2px;
-        }
-
-        .chat-bubble.assistant {
-            align-self: flex-start;
-            background-color: rgba(255, 255, 255, 0.03);
-            color: var(--text-color);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-bottom-left-radius: 2px;
-        }
-
-        .chat-bubble.assistant pre {
-            background-color: #030712;
-            padding: 0.5rem;
-            border-radius: 6px;
-            margin-top: 0.5rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            overflow-x: auto;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            color: #f3f4f6;
-        }
-
-        .chat-bubble.assistant code {
-            font-family: 'JetBrains Mono', monospace;
-            background-color: rgba(255, 255, 255, 0.08);
-            padding: 0.1rem 0.3rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
-
-        .chat-input-bar {
-            display: flex;
-            gap: 0.5rem;
-            padding: 0.8rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .chat-input {
-            flex-grow: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            color: var(--text-color);
-            padding: 0.6rem 0.8rem;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        .chat-input:focus {
-            border-color: rgba(59, 130, 246, 0.5);
-        }
-
-        .chat-send-btn {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 0.6rem 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .chat-send-btn:hover {
-            opacity: 0.9;
-        }
-
-        .typing-indicator {
-            align-self: flex-start;
-            background-color: rgba(255, 255, 255, 0.03);
-            color: var(--text-muted);
-            padding: 0.8rem 1rem;
-            border-radius: 14px;
-            border-bottom-left-radius: 2px;
-            font-size: 0.85rem;
-            display: none;
-            align-items: center;
-            gap: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            margin-left: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .typing-dot {
-            width: 6px;
-            height: 6px;
-            background-color: var(--text-muted);
-            border-radius: 50%;
-            animation: typingDot 1.4s infinite both;
-        }
-
-        .typing-dot:nth-child(2) { animation-delay: .2s; }
-        .typing-dot:nth-child(3) { animation-delay: .4s; }
-
-        @keyframes typingDot {
-            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-            40% { transform: scale(1); opacity: 1; }
-        }
 
         /* Terminal Console */
         .terminal {
@@ -596,6 +463,7 @@
                 <div class="subtitle">Real-time Operations & Fault Injection Interface</div>
             </div>
         </div>
+        <a href="/agent" style="background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; color: white; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: opacity 0.2s; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Launch SRE AI Debugger →</a>
     </header>
 
     <div class="dashboard-grid">
@@ -695,7 +563,6 @@
             <div class="tabs-container">
                 <div class="tab-header">
                     <button id="btn-tab-faults" class="tab-btn active" onclick="switchTab('tab-faults')">Control Panel</button>
-                    <button id="btn-tab-chat" class="tab-btn" onclick="switchTab('tab-chat')">AI Agent Assistant</button>
                     <button id="btn-tab-logs" class="tab-btn" onclick="switchTab('tab-logs')">System Logs</button>
                 </div>
 
@@ -760,27 +627,6 @@
                         </div>
 
                         <button class="reset-btn" onclick="resetAllFaults()">Clear All Active Faults</button>
-                    </div>
-                </div>
-
-                <!-- Tab 2: AI Troubleshooting Chat -->
-                <div class="tab-content" id="tab-chat">
-                    <div class="chat-container">
-                        <div class="chat-messages" id="chat-messages-box">
-                            <div class="chat-bubble assistant">
-                                Hello! I am your AI Site Reliability Engineer. I have access to tools that check service status, inject/reset faults, and view logs. How can I help you troubleshoot?
-                            </div>
-                        </div>
-                        <div id="typing-loader" class="typing-indicator">
-                            <span>SRE Agent is analyzing stack state</span>
-                            <div class="typing-dot"></div>
-                            <div class="typing-dot"></div>
-                            <div class="typing-dot"></div>
-                        </div>
-                        <div class="chat-input-bar">
-                            <input type="text" id="chat-user-input" class="chat-input" placeholder="Ask me to diagnose or inject faults..." onkeydown="handleChatKey(event)">
-                            <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
-                        </div>
                     </div>
                 </div>
 
@@ -979,102 +825,7 @@
             }
         }
 
-        // Chat Logic
-        let chatHistory = [];
 
-        function handleChatKey(event) {
-            if (event.key === 'Enter') {
-                sendChatMessage();
-            }
-        }
-
-        function parseMarkdown(text) {
-            if (!text) return "";
-            
-            // Escape HTML tags to prevent XSS
-            let html = text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
-            
-            // Fenced code blocks
-            html = html.replace(/```([\s\S]+?)```/g, '<pre><code>$1</code></pre>');
-            
-            // Inline code
-            html = html.replace(/`([^`\n]+?)`/g, '<code>$1</code>');
-            
-            // Bold
-            html = html.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-            
-            // Newlines
-            html = html.replace(/\n/g, '<br>');
-            
-            return html;
-        }
-
-        async function sendChatMessage() {
-            const inputEl = document.getElementById('chat-user-input');
-            const messageText = inputEl.value.trim();
-            if (!messageText) return;
-            
-            inputEl.value = '';
-            
-            // Render user bubble
-            appendChatBubble(messageText, 'user');
-            
-            // Update history
-            chatHistory.push({ role: 'user', content: messageText });
-            
-            // Show loader
-            const loader = document.getElementById('typing-loader');
-            loader.style.display = 'flex';
-            
-            // Scroll to bottom
-            const messagesBox = document.getElementById('chat-messages-box');
-            messagesBox.scrollTop = messagesBox.scrollHeight;
-
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messages: chatHistory })
-                });
-                
-                const data = await response.json();
-                
-                // Hide loader
-                loader.style.display = 'none';
-                
-                // Render assistant bubble
-                appendChatBubble(data.content, 'assistant');
-                
-                // Save assistant message to history
-                chatHistory.push({ role: 'assistant', content: data.content });
-                
-                // Refresh fault checkboxes and sliders in case LLM toggled them
-                fetchFaults();
-                
-            } catch (err) {
-                loader.style.display = 'none';
-                appendChatBubble("⚠️ Error connecting to AI Agent endpoint.", 'assistant');
-                console.error(err);
-            }
-        }
-
-        function appendChatBubble(text, sender) {
-            const messagesBox = document.getElementById('chat-messages-box');
-            const bubble = document.createElement('div');
-            bubble.className = `chat-bubble ${sender}`;
-            
-            if (sender === 'assistant') {
-                bubble.innerHTML = parseMarkdown(text);
-            } else {
-                bubble.textContent = text;
-            }
-            
-            messagesBox.appendChild(bubble);
-            messagesBox.scrollTop = messagesBox.scrollHeight;
-        }
 
         // Init
         window.addEventListener('load', () => {
