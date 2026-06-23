@@ -612,6 +612,7 @@
 
         async function sendChatMessage() {
             const inputEl = document.getElementById('chat-user-input');
+            if (inputEl.disabled) return;
             const messageText = inputEl.value.trim();
             if (!messageText) return;
             
@@ -825,6 +826,34 @@
                 bar.style.backgroundColor = 'var(--warning)';
             } else {
                 bar.style.backgroundColor = 'var(--danger)';
+            }
+
+            const inputEl = document.getElementById('chat-user-input');
+            const submitBtn = document.querySelector('.chat-send-btn');
+            const quickButtons = document.querySelectorAll('.quick-btn');
+            
+            if (totalLength >= limit) {
+                inputEl.disabled = true;
+                inputEl.placeholder = "⚠️ Context limit reached! Clear this session or start a new one.";
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = 0.4;
+                submitBtn.style.cursor = 'not-allowed';
+                quickButtons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = 0.4;
+                    btn.style.cursor = 'not-allowed';
+                });
+            } else {
+                inputEl.disabled = false;
+                inputEl.placeholder = "Ask the agent to diagnose issues...";
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = 1.0;
+                submitBtn.style.cursor = 'pointer';
+                quickButtons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = 1.0;
+                    btn.style.cursor = 'pointer';
+                });
             }
         }
 

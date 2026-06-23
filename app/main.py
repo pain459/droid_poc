@@ -409,6 +409,15 @@ async def chat_with_agent(payload: ChatInput):
     if sid not in AGENT_SESSIONS:
         sid = "default"
 
+    # Enforce context capacity limit (e.g. 15,000 characters)
+    total_length = sum(len(m.get("content", "")) for m in AGENT_SESSIONS[sid]["messages"])
+    if total_length >= 15000:
+        return {
+            "role": "assistant",
+            "content": "⚠️ **Context capacity limit reached for this session (15,000 characters).** To prevent excessive API token costs, please clear this session or start a new diagnostic session in the left sidebar.",
+            "tool_calls": []
+        }
+
     # If first user message, dynamically rename the session title
     if not AGENT_SESSIONS[sid]["messages"]:
         preview = payload.message.strip()
